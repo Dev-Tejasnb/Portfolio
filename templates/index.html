@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ personal_info.name }} | {{ personal_info.title }}</title>
+  <meta name="description" content="{{ personal_info.bio[:160] }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="antialiased">
+
+<!-- Loading Screen -->
+<div id="loading-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-background" style="transition: opacity 0.6s ease-out, visibility 0.6s ease-out;">
+  <div class="flex flex-col items-center gap-4">
+    <div class="w-16 h-16 rounded-full border-4 border-border-light" style="border-top-color: var(--color-primary); animation: rotate 1s linear infinite;"></div>
+    <span class="text-text-muted text-sm text-mono">Loading...</span>
+  </div>
+</div>
+
+<!-- Animated Background Canvas -->
+<canvas id="particle-canvas" class="fixed inset-0 -z-10 pointer-events-none"></canvas>
+
+<!-- Navbar -->
+<nav id="navbar" class="fixed top-0 left-0 right-0 z-40 transition-all duration-300" style="background: rgba(5,8,22,0.8); backdrop-filter: blur(20px); border-bottom: 1px solid var(--color-border);">
+  <div class="section-container">
+    <div class="flex items-center justify-between h-16">
+      <a href="#" class="text-display text-2xl font-bold gradient-text">{{ personal_info.name[:10] }}</a>
+      <div class="hidden md:flex items-center gap-8">
+        {% for item in nav_items %}
+        <a href="{{ item.href }}" class="nav-link text-sm">{{ item.label }}</a>
+        {% endfor %}
+      </div>
+      <div class="hidden md:flex items-center gap-3">
+        {% for link in social_links %}
+        <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer" class="social-link w-9 h-9 text-sm">
+          {% if link.icon == "github" %}
+          <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12 24 5.37 18.63 0 12 0z"/></svg>
+          {% elif link.icon == "linkedin" %}
+          <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+          {% elif link.icon == "twitter" %}
+          <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          {% elif link.icon == "mail" %}
+          <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+          {% else %}
+          <span class="text-xs font-bold">IC</span>
+          {% endif %}
+        </a>
+        {% endfor %}
+        <a href="#projects" class="btn-primary text-sm">Get Started</a>
+      </div>
+      <button id="mobile-menu-btn" class="md:hidden p-2 text-text-primary" aria-label="Toggle menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="w-6 h-6"><path d="M3 12h18M3 6h18M3 18h18" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+  <!-- Mobile Menu -->
+  <div id="mobile-menu" class="hidden md:hidden border-t border-border" style="background: var(--color-surface);">
+    <div class="section-container py-4 space-y-4">
+      {% for item in nav_items %}
+      <a href="{{ item.href }}" class="block text-text-secondary hover:text-primary transition-colors py-2">{{ item.label }}</a>
+      {% endfor %}
+      <div class="flex gap-3 pt-2">
+        {% for link in social_links %}
+        <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer" class="social-link w-10 h-10 text-sm">
+          {% if link.icon == "github" %}
+          <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12 24 5.37 18.63 0 12 0z"/></svg>
+          {% elif link.icon == "linkedin" %}
+          <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+          {% elif link.icon == "twitter" %}
+          <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          {% elif link.icon == "mail" %}
+          <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+          {% else %}
+          <span class="text-xs font-bold">IC</span>
+          {% endif %}
+        </a>
+        {% endfor %}
+        <a href="#projects" class="btn-primary text-sm" style="margin-left:auto;">Get Started</a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero Section -->
+<section id="hero" class="min-h-screen flex items-center relative overflow-hidden pt-16">
+  <div class="section-container w-full py-20 md:py-32">
+    <div class="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
+      <div class="flex-1 text-center lg:text-left">
+        <span class="inline-block glass rounded-full px-5 py-2 text-sm font-medium mb-4 tracking-wider uppercase"><span class="gradient-text">Welcome to my portfolio</span></span>
+        <h1 class="text-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl leading-[1.1] mb-6 flex flex-wrap items-baseline justify-center lg:justify-start gap-x-4">
+          <span class="whitespace-nowrap">Hi, I'm</span>
+          <span class="gradient-text whitespace-nowrap">{{ personal_info.name }}</span>
+        </h1>
+        <div class="flex items-center justify-center lg:justify-start gap-2 mb-8">
+          <span class="text-display text-xl md:text-2xl text-text-secondary">I'm a</span>
+          <span class="text-display text-xl md:text-2xl text-primary">
+            <span id="typewriter-text"></span><span class="typing-cursor"></span>
+          </span>
+        </div>
+        <p class="text-body text-text-secondary text-lg mb-10 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+          {{ personal_info.bio }}
+        </p>
+        <div class="flex flex-wrap items-center justify-center lg:justify-start gap-4 mb-12">
+          <a href="#projects" class="btn-primary">Get Started <span>→</span></a>
+          <a href="{{ personal_info.github }}" target="_blank" rel="noopener noreferrer" class="btn-ghost">
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12 24 5.37 18.63 0 12 0z"/></svg>
+            GitHub
+          </a>
+          <a href="#about" class="btn-ghost">About Me</a>
+        </div>
+        <div class="grid grid-cols-3 gap-4 max-w-md mx-auto lg:mx-0">
+          <div class="glass-card rounded-xl p-4 text-center">
+            <span class="text-display text-2xl md:text-3xl font-bold gradient-text">15+</span>
+            <p class="text-text-muted text-xs mt-1">Projects Built</p>
+          </div>
+          <div class="glass-card rounded-xl p-4 text-center">
+            <span class="text-display text-2xl md:text-3xl font-bold gradient-text">10+</span>
+            <p class="text-text-muted text-xs mt-1">Tech Stacks</p>
+          </div>
+          <div class="glass-card rounded-xl p-4 text-center">
+            <span class="text-display text-2xl md:text-3xl font-bold gradient-text">365</span>
+            <p class="text-text-muted text-xs mt-1">Learning Daily</p>
+          </div>
+        </div>
+      </div>
+      <div class="flex-shrink-0">
+        <div class="relative w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96">
+          <div class="orbital-ring absolute inset-0 rounded-full"></div>
+          <div class="w-full h-full rounded-full overflow-hidden border-2 border-border relative flex items-center justify-center" style="background: linear-gradient(135deg, var(--color-surface), var(--color-background));">
+            <span class="text-display text-6xl md:text-7xl gradient-text">{{ personal_info.name[:10] }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- About Section -->
+<section id="about" class="py-20 md:py-32">
+  <div class="section-container">
+    <h2 class="section-title">About Me</h2>
+    <p class="section-subtitle mb-12">A brief introduction about who I am and what I do.</p>
+    <div class="grid lg:grid-cols-2 gap-12">
+      <div class="space-y-6">
+        <div class="glass-card rounded-2xl p-6">
+          <p class="text-body text-text-secondary leading-relaxed">{{ personal_info.bio }}</p>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="glass-card rounded-xl p-5">
+            <span class="text-primary text-sm font-semibold uppercase tracking-wider">Location</span>
+            <p class="text-text-primary font-medium mt-2">{{ personal_info.location }}</p>
+          </div>
+          <div class="glass-card rounded-xl p-5">
+            <span class="text-success text-sm font-semibold uppercase tracking-wider">Availability</span>
+            <p class="text-text-primary font-medium mt-2">Open for Work</p>
+          </div>
+          <div class="glass-card rounded-xl p-5">
+            <span class="text-warning text-sm font-semibold uppercase tracking-wider">Email</span>
+            <p class="text-text-primary font-medium mt-2 text-sm break-words">{{ personal_info.email }}</p>
+          </div>
+          <div class="glass-card rounded-xl p-5">
+            <span class="text-accent text-sm font-semibold uppercase tracking-wider">Focus</span>
+            <p class="text-text-primary font-medium mt-2">Full Stack</p>
+          </div>
+        </div>
+      </div>
+      <div class="flex flex-col items-center justify-center gap-6">
+        <div class="relative w-56 h-56 md:w-64 md:h-64">
+          <div class="orbital-ring absolute inset-0 rounded-full"></div>
+          <div class="w-full h-full rounded-full overflow-hidden border-2 border-border relative flex items-center justify-center" style="background: linear-gradient(135deg, var(--color-surface-elevated), var(--color-surface));">
+            <span class="text-display text-5xl md:text-6xl gradient-text">{{ personal_info.name[:10] }}</span>
+          </div>
+        </div>
+        <div class="flex gap-3">
+          {% for link in social_links %}
+          <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer" class="social-link">
+            {% if link.icon == "github" %}
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12 24 5.37 18.63 0 12 0z"/></svg>
+            {% elif link.icon == "linkedin" %}
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+            {% elif link.icon == "twitter" %}
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            {% elif link.icon == "mail" %}
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+            {% else %}
+            <span class="text-xs font-bold">IC</span>
+            {% endif %}
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Skills Section -->
+<section id="skills" class="py-20 md:py-32">
+  <div class="section-container">
+    <h2 class="section-title">Skills & Technologies</h2>
+    <p class="section-subtitle mb-12">Technologies and tools I work with, organized by category.</p>
+    {% for category in category_order %}
+    {% if category in categorized_skills %}
+    <div class="mb-12">
+      <h3 class="skill-category text-lg">{{ category }}</h3>
+      <div class="flex flex-wrap gap-3">
+        {% for skill in categorized_skills[category] %}
+         <div class="skill-tag">
+          <span>{{ skill.icon }}</span>
+          <span class="text-text-primary">{{ skill.name }}</span>
+          <div class="skill-bar">
+            <div class="skill-bar-fill" data-w="{{ skill.proficiency }}"></div>
+          </div>
+          <span class="text-text-muted text-xs">{{ skill.proficiency }}%</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+    <div class="glass-card rounded-2xl p-6 mt-8">
+      <h3 class="text-text-primary font-semibold mb-4">Currently Exploring</h3>
+      <div class="flex flex-wrap gap-3">
+        {% for tech in exploring_techs %}
+        <span class="skill-tag" style="border-color: var(--color-accent);">
+          <span class="w-2 h-2 rounded-full" style="background: var(--color-accent);"></span>
+          {{ tech }}
+        </span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Projects Section -->
+<section id="projects" class="py-20 md:py-32">
+  <div class="section-container">
+    <h2 class="section-title">Projects</h2>
+    <p class="section-subtitle mb-12">A collection of projects I've built and contributed to.</p>
+    {% if featured_projects %}
+    <h3 class="text-text-secondary font-semibold uppercase tracking-wider text-sm mb-6">Featured Projects</h3>
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
+      {% for project in featured_projects %}
+      <div class="project-card flex flex-col">
+        <div class="relative aspect-video rounded-lg overflow-hidden mb-4 group" style="background: linear-gradient(135deg, var(--color-surface-elevated), var(--color-background));">
+          <div class="absolute inset-0 flex items-center justify-center">
+            <span class="text-display text-3xl font-bold opacity-20">{{ project.title[:2] }}</span>
+          </div>
+          <div class="absolute inset-0 flex items-center justify-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style="background: rgba(5,8,22,0.85);">
+            <a href="{{ project.githubUrl }}" target="_blank" rel="noopener noreferrer" class="btn-ghost p-3 rounded-lg" aria-label="GitHub">
+              <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12 24 5.37 18.63 0 12 0z"/></svg>
+            </a>
+            {% if project.liveUrl %}
+            <a href="{{ project.liveUrl }}" target="_blank" rel="noopener noreferrer" class="btn-ghost p-3 rounded-lg" aria-label="Live Demo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="w-5 h-5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 3h6v6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 14L21 3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+            {% endif %}
+          </div>
+        </div>
+        <h3 class="text-display text-lg font-semibold text-text-primary mb-2">{{ project.title }}</h3>
+        <p class="text-body text-text-secondary text-sm mb-4 flex-1">{{ project.description }}</p>
+        <div class="flex flex-wrap gap-2">
+          {% for tech in project.techStack[:4] %}
+          <span class="text-xs px-3 py-1 rounded-full font-medium" style="background: rgba(59,130,246,0.1); color: var(--color-primary); border: 1px solid rgba(59,130,246,0.2);">{{ tech }}</span>
+          {% endfor %}
+          {% if project.techStack|length > 4 %}
+          <span class="text-xs px-3 py-1 rounded-full font-medium text-text-muted" style="background: rgba(100,116,139,0.1); border: 1px solid var(--color-border);">+{{ project.techStack|length - 4 }}</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if other_projects %}
+    <h3 class="text-text-secondary font-semibold uppercase tracking-wider text-sm mb-6">More Projects</h3>
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {% for project in other_projects %}
+      <div class="project-card flex flex-col">
+        <div class="relative aspect-video rounded-lg overflow-hidden mb-4 group" style="background: linear-gradient(135deg, var(--color-surface-elevated), var(--color-background));">
+          <div class="absolute inset-0 flex items-center justify-center">
+            <span class="text-display text-3xl font-bold opacity-20">{{ project.title[:2] }}</span>
+          </div>
+          <div class="absolute inset-0 flex items-center justify-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style="background: rgba(5,8,22,0.85);">
+            <a href="{{ project.githubUrl }}" target="_blank" rel="noopener noreferrer" class="btn-ghost p-3 rounded-lg" aria-label="GitHub">
+              <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12 24 5.37 18.63 0 12 0z"/></svg>
+            </a>
+            {% if project.liveUrl %}
+            <a href="{{ project.liveUrl }}" target="_blank" rel="noopener noreferrer" class="btn-ghost p-3 rounded-lg" aria-label="Live Demo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="w-5 h-5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 3h6v6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 14L21 3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+            {% endif %}
+          </div>
+        </div>
+        <h3 class="text-display text-lg font-semibold text-text-primary mb-2">{{ project.title }}</h3>
+        <p class="text-body text-text-secondary text-sm mb-4 flex-1">{{ project.description }}</p>
+        <div class="flex flex-wrap gap-2">
+          {% for tech in project.techStack[:4] %}
+          <span class="text-xs px-3 py-1 rounded-full font-medium" style="background: rgba(59,130,246,0.1); color: var(--color-primary); border: 1px solid rgba(59,130,246,0.2);">{{ tech }}</span>
+          {% endfor %}
+          {% if project.techStack|length > 4 %}
+          <span class="text-xs px-3 py-1 rounded-full font-medium text-text-muted" style="background: rgba(100,116,139,0.1); border: 1px solid var(--color-border);">+{{ project.techStack|length - 4 }}</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<!-- Timeline Section -->
+<section id="timeline" class="py-20 md:py-32">
+  <div class="section-container">
+    <h2 class="section-title">Timeline</h2>
+    <p class="section-subtitle mb-12">My journey through learning, building, and contributing.</p>
+    <div class="max-w-5xl mx-auto">
+      {% for item in timelines %}
+      <div class="timeline-item">
+        <div class="absolute left-0 top-1 w-5 h-5 rounded-full border-2 tl-dot flex items-center justify-center">
+          <div class="w-2 h-2 rounded-full tl-inner"></div>
+        </div>
+        <div class="glass-card rounded-2xl p-6 ml-4 card-hover tl-card">
+          <div class="flex items-center gap-3 mb-3">
+            <span class="text-xl">{{ item.icon }}</span>
+            <span class="text-xs px-3 py-1 rounded-full font-medium tl-badge">{{ item.type|capitalize }}</span>
+            <span class="text-text-muted text-sm ml-auto">{{ item.date }}</span>
+          </div>
+          <h3 class="text-display text-lg font-semibold text-text-primary mb-2">{{ item.title }}</h3>
+          <p class="text-body text-text-secondary text-sm leading-relaxed">{{ item.description }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- GitHub Section -->
+<section id="github" class="py-20 md:py-32">
+  <div class="section-container">
+    <h2 class="section-title">GitHub</h2>
+    <p class="section-subtitle mb-12">My open source contributions and activity.</p>
+    <div class="grid md:grid-cols-5 gap-4 mb-12">
+      <div class="glass-card rounded-xl p-5 text-center">
+        <span id="gh-total-contributions" class="text-display text-2xl font-bold gradient-text">--</span>
+        <p class="text-text-muted text-sm mt-1">Contributions ({{ current_year }})</p>
+      </div>
+      <div class="glass-card rounded-xl p-5 text-center">
+        <span id="gh-total-repos" class="text-display text-2xl font-bold gradient-text">--</span>
+        <p class="text-text-muted text-sm mt-1">Total Repos</p>
+      </div>
+      <div class="glass-card rounded-xl p-5 text-center">
+        <span id="gh-total-stars" class="text-display text-2xl font-bold gradient-text">--</span>
+        <p class="text-text-muted text-sm mt-1">Total Stars</p>
+      </div>
+      <div class="glass-card rounded-xl p-5 text-center">
+        <span id="gh-streak" class="text-display text-2xl font-bold gradient-text">--</span>
+        <p class="text-text-muted text-sm mt-1">Current Streak</p>
+      </div>
+      <div class="glass-card rounded-xl p-5 text-center">
+        <span id="gh-longest-streak" class="text-display text-2xl font-bold gradient-text">--</span>
+        <p class="text-text-muted text-sm mt-1">Longest Streak</p>
+      </div>
+    </div>
+    <div class="glass-card rounded-2xl p-6 mb-8">
+      <h3 class="text-text-primary font-semibold mb-4">Contribution Graph</h3>
+      <div id="contribution-grid" class="flex gap-[3px] overflow-x-auto pb-2"></div>
+    </div>
+    <div class="text-center">
+      <a href="{{ personal_info.github }}" target="_blank" rel="noopener noreferrer" class="btn-primary">
+        <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12 24 5.37 18.63 0 12 0z"/></svg>
+        View Profile on GitHub
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer style="border-top: 1px solid var(--color-border); background: var(--color-surface); position: relative;">
+  <div class="section-container py-16">
+    <div class="grid md:grid-cols-3 gap-12">
+      <div class="flex flex-col items-center md:items-start gap-4">
+        <a href="#" class="text-display text-3xl font-bold gradient-text">{{ personal_info.name[:10] }}</a>
+        <p class="text-text-muted text-sm text-center md:text-left leading-relaxed max-w-xs">
+          {{ personal_info.title }} building scalable web applications and automation tools.
+        </p>
+        <div class="flex gap-3 mt-2">
+          {% for link in social_links %}
+          <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer" class="social-link w-10 h-10">
+            {% if link.icon == "github" %}
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12 24 5.37 18.63 0 12 0z"/></svg>
+            {% elif link.icon == "linkedin" %}
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+            {% elif link.icon == "twitter" %}
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            {% elif link.icon == "mail" %}
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+            {% else %}
+            <span class="text-xs font-bold">IC</span>
+            {% endif %}
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="flex flex-col items-center md:items-start gap-4">
+        <h4 class="text-display text-sm font-semibold uppercase tracking-wider text-text-primary">Navigation</h4>
+        <div class="flex flex-col items-center md:items-start gap-3">
+          {% for item in nav_items %}
+          <a href="{{ item.href }}" class="nav-link text-sm">{{ item.label }}</a>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="flex flex-col items-center md:items-start gap-4">
+        <h4 class="text-display text-sm font-semibold uppercase tracking-wider text-text-primary">Contact</h4>
+        <div class="flex flex-col items-center md:items-start gap-3 text-sm">
+          <a href="mailto:{{ personal_info.email }}" class="text-text-muted hover:text-primary transition-colors">{{ personal_info.email }}</a>
+          <span class="text-text-muted">{{ personal_info.location }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="mt-12 pt-8 text-center flex flex-col items-center gap-4" style="border-top: 1px solid var(--color-border);">
+      <p class="text-text-muted text-sm">&copy; <span id="footer-year"></span> {{ personal_info.name }}. Built with <span class="gradient-text">Next.js</span> &amp; <span class="gradient-text">FastAPI</span>.</p>
+      <a href="#" class="btn-ghost text-xs px-4 py-2 rounded-lg">Back to Top &uarr;</a>
+    </div>
+  </div>
+</footer>
+
+<!-- Floating AI Chatbot -->
+<div id="chatbot" class="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4">
+  <div id="chatbot-panel" class="hidden glass-strong rounded-2xl overflow-hidden" style="width: 360px; max-height: 520px;">
+    <div class="flex items-center justify-between px-5 py-4" style="border-bottom: 1px solid var(--color-border); background: var(--color-surface);">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: linear-gradient(135deg, var(--color-primary), var(--color-accent));">
+          <svg viewBox="0 0 24 24" fill="white" class="w-5 h-5"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+        </div>
+        <div>
+          <p class="text-text-primary text-sm font-semibold">AI Assistant</p>
+          <p class="text-text-muted text-xs">Ask me anything!</p>
+        </div>
+      </div>
+      <button id="chatbot-close" class="text-text-muted hover:text-text-primary transition-colors" aria-label="Close chatbot">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="w-5 h-5"><path d="M18 6L6 18M6 6l12 12" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div id="chatbot-messages" class="p-5 space-y-4 overflow-y-auto" style="height: 340px; background: var(--color-background);">
+      <div class="flex items-start gap-3">
+        <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style="background: linear-gradient(135deg, var(--color-primary), var(--color-accent));">
+          <svg viewBox="0 0 24 24" fill="white" class="w-4 h-4"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+        </div>
+        <div class="flex-1 p-3 rounded-xl text-sm leading-relaxed" style="background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text-secondary);">
+          Hi! I'm the AI assistant for Tejas's portfolio. Ask me about skills, projects, experience, or anything else!
+        </div>
+      </div>
+    </div>
+    <div class="p-4" style="border-top: 1px solid var(--color-border); background: var(--color-surface);">
+      <div class="flex gap-3">
+        <input id="chatbot-input" type="text" class="input-field flex-1" placeholder="Type a message...">
+        <button id="chatbot-send" class="btn-primary" aria-label="Send message">
+          <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+  <button id="chatbot-toggle" class="rounded-full w-14 h-14 flex items-center justify-center pulse-glow" aria-label="Toggle chatbot" style="background: linear-gradient(135deg, var(--color-primary), var(--color-accent)); color: var(--color-background); border: none; cursor: pointer;">
+    <svg id="chatbot-open-icon" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+    <svg id="chatbot-close-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="w-6 h-6 hidden"><path d="M18 6L6 18M6 6l12 12" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+</div>
+
+<!-- Floating Terminal -->
+<div id="terminal" class="fixed bottom-6 left-6 z-50 flex flex-col items-start gap-4">
+  <div id="terminal-panel" class="hidden terminal-window" style="width: 420px; max-height: 500px;">
+    <div class="terminal-header">
+      <div class="w-3 h-3 rounded-full" style="background: #EF4444;"></div>
+      <div class="w-3 h-3 rounded-full" style="background: #F59E0B;"></div>
+      <div class="w-3 h-3 rounded-full" style="background: #22C55E;"></div>
+      <span class="text-text-muted text-xs ml-2">terminal — portfolio</span>
+    </div>
+    <div id="terminal-body" class="terminal-body" style="height: 340px;">
+      <div class="text-text-secondary text-sm leading-relaxed whitespace-pre-wrap">Welcome to Tejas's Portfolio Terminal v1.0.0</div>
+      <div class="text-text-muted text-xs mt-1">Type 'help' for available commands.</div>
+      <div class="text-text-secondary text-sm leading-relaxed mt-4 whitespace-pre-wrap" id="terminal-output"></div>
+    </div>
+    <div class="flex items-center gap-2 px-4 py-3" style="border-top: 1px solid var(--color-border);">
+      <span class="terminal-prompt text-sm"><span style="color: var(--color-success);">guest</span><span style="color: var(--color-text-muted);">@</span><span style="color: var(--color-primary);">portfolio</span>:$</span>
+      <input id="terminal-input" type="text" class="terminal-input text-sm" placeholder="Type a command..." autocomplete="off" spellcheck="false">
+    </div>
+  </div>
+  <button id="terminal-toggle" class="rounded-full w-14 h-14 flex items-center justify-center" aria-label="Toggle terminal" style="background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text-primary); cursor: pointer;">
+    <svg id="terminal-open-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="w-6 h-6"><path d="M4 17l6-6-6-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 19h8" stroke-width="2" stroke-linecap="round"/></svg>
+    <svg id="terminal-close-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="w-6 h-6 hidden"><path d="M18 6L6 18M6 6l12 12" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+</div>
+
+<script id="portfolio-config" type="application/json">
+{"headlines":{{ headlines|safe }},"particle":{{ particle_config|safe }},"grid":{{ grid_config|safe }}}
+</script>
+<script>
+// ===== Configuration from Jinja2 =====
+var CFG = JSON.parse(document.getElementById('portfolio-config').textContent);
+var HEADLINES = CFG.headlines;
+var PARTICLE_CONFIG = CFG.particle;
+var GRID_CONFIG = CFG.grid;
+
+// ===== Loading Screen =====
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    var ls = document.getElementById('loading-screen');
+    if (ls) {
+      ls.style.opacity = '0';
+      ls.style.visibility = 'hidden';
+      setTimeout(function() { ls.style.display = 'none'; }, 600);
+    }
+  }, 800);
+});
+
+// ===== Particle Canvas Animation =====
+(function() {
+  var canvas = document.getElementById('particle-canvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var particles = [];
+  var mouse = { x: null, y: null, radius: 120 };
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  for (var i = 0; i < (PARTICLE_CONFIG.count || 50); i++) {
+    var size = (PARTICLE_CONFIG.size?.min || 1) + Math.random() * ((PARTICLE_CONFIG.size?.max || 3) - (PARTICLE_CONFIG.size?.min || 1));
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      vx: (PARTICLE_CONFIG.speed?.min || 0.1) + Math.random() * ((PARTICLE_CONFIG.speed?.max || 0.5) - (PARTICLE_CONFIG.speed?.min || 0.1)),
+      vy: (PARTICLE_CONFIG.speed?.min || 0.1) + Math.random() * ((PARTICLE_CONFIG.speed?.max || 0.5) - (PARTICLE_CONFIG.speed?.min || 0.1)),
+      size: size,
+      opacity: (PARTICLE_CONFIG.opacity?.min || 0.1) + Math.random() * ((PARTICLE_CONFIG.opacity?.max || 0.5) - (PARTICLE_CONFIG.opacity?.min || 0.1)),
+    });
+    if (Math.random() > 0.5) particles[i].vx *= -1;
+    if (Math.random() > 0.5) particles[i].vy *= -1;
+  }
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Grid
+    var gridSize = GRID_CONFIG.size || 60;
+    ctx.strokeStyle = GRID_CONFIG.color || '#3B82F6';
+    ctx.lineWidth = 0.5;
+    ctx.globalAlpha = GRID_CONFIG.opacity || 0.03;
+    for (var x = 0; x <= canvas.width; x += gridSize) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, canvas.height);
+      ctx.stroke();
+    }
+    for (var y = 0; y <= canvas.height; y += gridSize) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(canvas.width, y);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // Particles
+    var particleColor = PARTICLE_CONFIG.color || '#3B82F6';
+    for (var i = 0; i < particles.length; i++) {
+      var p = particles[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+      if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = particleColor;
+      ctx.globalAlpha = p.opacity;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      // Mouse connection
+      if (mouse.x !== null) {
+        var dx = p.x - mouse.x;
+        var dy = p.y - mouse.y;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < mouse.radius) {
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(mouse.x, mouse.y);
+          ctx.strokeStyle = particleColor;
+          ctx.globalAlpha = (1 - dist / mouse.radius) * 0.2;
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+      }
+    }
+    requestAnimationFrame(animate);
+  }
+
+  canvas.addEventListener('mousemove', function(e) {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+  });
+  canvas.addEventListener('mouseleave', function() {
+    mouse.x = null;
+    mouse.y = null;
+  });
+
+  animate();
+})();
+
+// ===== Typewriter Effect =====
+(function() {
+  var el = document.getElementById('typewriter-text');
+  if (!el || !HEADLINES.length) return;
+  var index = 0;
+  var charIndex = 0;
+  var isDeleting = false;
+  var speed = 80;
+
+  function type() {
+    var current = HEADLINES[index];
+    if (!isDeleting) {
+      el.textContent = current.substring(0, charIndex + 1);
+      charIndex++;
+      if (charIndex === current.length) {
+        isDeleting = true;
+        speed = 2000;
+        setTimeout(type, speed);
+        return;
+      }
+      speed = 80 + Math.random() * 40;
+    } else {
+      el.textContent = current.substring(0, charIndex);
+      charIndex--;
+      if (charIndex < 0) {
+        isDeleting = false;
+        index = (index + 1) % HEADLINES.length;
+        speed = 500;
+        setTimeout(type, speed);
+        return;
+      }
+      speed = 30 + Math.random() * 20;
+    }
+    setTimeout(type, speed);
+  }
+  type();
+})();
+
+// ===== Mobile Menu Toggle =====
+(function() {
+  var btn = document.getElementById('mobile-menu-btn');
+  var menu = document.getElementById('mobile-menu');
+  if (btn && menu) {
+    var links = menu.querySelectorAll('a');
+    for (var i = 0; i < links.length; i++) {
+      links[i].addEventListener('click', function() { menu.classList.add('hidden'); });
+    }
+    btn.addEventListener('click', function() { menu.classList.toggle('hidden'); });
+  }
+})();
+
+// ===== Navbar Scroll Effect =====
+(function() {
+  var navbar = document.getElementById('navbar');
+  if (!navbar) return;
+  var prevScroll = 0;
+  window.addEventListener('scroll', function() {
+    var cur = window.pageYOffset || document.documentElement.scrollTop;
+    if (cur > 80) {
+      navbar.style.borderBottom = '1px solid var(--color-border)';
+      navbar.style.background = 'rgba(5,8,22,0.95)';
+    } else {
+      navbar.style.borderBottom = '1px solid var(--color-border)';
+      navbar.style.background = 'rgba(5,8,22,0.8)';
+    }
+    prevScroll = cur;
+  });
+})();
+
+// ===== Active Nav Link Highlight =====
+(function() {
+  var links = document.querySelectorAll('.nav-link');
+  var sections = [];
+  for (var i = 0; i < links.length; i++) {
+    var href = links[i].getAttribute('href');
+    if (href && href.startsWith('#')) {
+      var id = href.substring(1);
+      var sec = document.getElementById(id);
+      if (sec) sections.push({ el: links[i], sec: sec, id: id });
+    }
+  }
+  if (!sections.length) return;
+  window.addEventListener('scroll', function() {
+    var cur = window.pageYOffset || document.documentElement.scrollTop;
+    var active = null;
+    for (var i = 0; i < sections.length; i++) {
+      var s = sections[i];
+      if (s.sec.offsetTop - 150 <= cur) active = s;
+    }
+    for (var j = 0; j < sections.length; j++) {
+      sections[j].el.classList.toggle('active', sections[j] === active);
+    }
+  });
+})();
+
+// ===== AI Chatbot =====
+(function() {
+  var toggle = document.getElementById('chatbot-toggle');
+  var panel = document.getElementById('chatbot-panel');
+  var close = document.getElementById('chatbot-close');
+  var input = document.getElementById('chatbot-input');
+  var send = document.getElementById('chatbot-send');
+  var messages = document.getElementById('chatbot-messages');
+  var openIcon = document.getElementById('chatbot-open-icon');
+  var closeIcon = document.getElementById('chatbot-close-icon');
+
+  function openChat() {
+    panel.classList.remove('hidden');
+    openIcon.classList.add('hidden');
+    closeIcon.classList.remove('hidden');
+    input.focus();
+  }
+
+  function closeChat() {
+    panel.classList.add('hidden');
+    openIcon.classList.remove('hidden');
+    closeIcon.classList.add('hidden');
+  }
+
+  if (toggle) toggle.addEventListener('click', function() {
+    if (panel.classList.contains('hidden')) openChat(); else closeChat();
+  });
+  if (close) close.addEventListener('click', closeChat);
+
+  function addMessage(text, role) {
+    var div = document.createElement('div');
+    div.className = 'flex items-start gap-3 ' + (role === 'user' ? 'flex-row-reverse' : '');
+    var inner = '';
+    inner += '<div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style="background: ' + (role === 'user' ? 'var(--color-primary)' : 'linear-gradient(135deg, var(--color-primary), var(--color-accent))') + ';">';
+    if (role === 'user') {
+      inner += '<svg viewBox="0 0 24 24" fill="white" class="w-4 h-4"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>';
+    } else {
+      inner += '<svg viewBox="0 0 24 24" fill="white" class="w-4 h-4"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>';
+    }
+    inner += '</div>';
+    inner += '<div class="flex-1 p-3 rounded-xl text-sm leading-relaxed whitespace-pre-wrap" style="background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text-secondary);">' + text.replace(/\n/g, '<br>') + '</div>';
+    div.innerHTML = inner;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function sendMessage() {
+    var msg = input.value.trim();
+    if (!msg) return;
+    addMessage(msg, 'user');
+    input.value = '';
+
+    fetch('/api/chat?message=' + encodeURIComponent(msg))
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        addMessage(data.response || 'Sorry, I had trouble processing that.', 'bot');
+      })
+      .catch(function() {
+        addMessage('Sorry, I encountered an error. Please try again.', 'bot');
+      });
+  }
+
+  if (send) send.addEventListener('click', sendMessage);
+  if (input) input.addEventListener('keydown', function(e) { if (e.key === 'Enter') sendMessage(); });
+})();
+
+// ===== Floating Terminal =====
+(function() {
+  var toggle = document.getElementById('terminal-toggle');
+  var panel = document.getElementById('terminal-panel');
+  var input = document.getElementById('terminal-input');
+  var output = document.getElementById('terminal-output');
+  var openIcon = document.getElementById('terminal-open-icon');
+  var closeIcon = document.getElementById('terminal-close-icon');
+
+  if (toggle) toggle.addEventListener('click', function() {
+    if (panel.classList.contains('hidden')) {
+      panel.classList.remove('hidden');
+      openIcon.classList.add('hidden');
+      closeIcon.classList.remove('hidden');
+      input.focus();
+    } else {
+      panel.classList.add('hidden');
+      openIcon.classList.remove('hidden');
+      closeIcon.classList.add('hidden');
+    }
+  });
+
+  var apiCache = {};
+
+  function fetchCmd(msg) {
+    return fetch('/api/chat?message=' + encodeURIComponent(msg))
+      .then(function(r) { return r.json(); })
+      .then(function(d) { return d.response || 'No response.'; })
+      .catch(function() { return 'Error fetching data.'; });
+  }
+
+  var commands = {
+    help: function() {
+      return 'Available commands:\n  help     - Show this help\n  whoami   - About Tejas\n  skills   - List skills\n  projects - Show projects\n  contact  - Contact info\n  clear    - Clear terminal\n  date     - Current date/time';
+    },
+    whoami: function() {
+      if (apiCache.whoami) return Promise.resolve(apiCache.whoami);
+      return fetchCmd('about').then(function(r) { apiCache.whoami = r; return r; });
+    },
+    skills: function() {
+      if (apiCache.skills) return Promise.resolve(apiCache.skills);
+      return fetchCmd('skills').then(function(r) { apiCache.skills = r; return r; });
+    },
+    projects: function() {
+      if (apiCache.projects) return Promise.resolve(apiCache.projects);
+      return fetchCmd('projects').then(function(r) { apiCache.projects = r; return r; });
+    },
+    contact: function() {
+      if (apiCache.contact) return Promise.resolve(apiCache.contact);
+      return fetchCmd('contact').then(function(r) { apiCache.contact = r; return r; });
+    },
+    date: function() {
+      return new Date().toString();
+    },
+    clear: function() {
+      output.textContent = '';
+      return null;
+    },
+  };
+
+  function executeCommand(cmd) {
+    var trimmed = cmd.trim().toLowerCase();
+    if (trimmed === '') return null;
+    var fn = commands[trimmed];
+    if (!fn) return 'Command not found: ' + trimmed + '\nType \'help\' for available commands.';
+    try { return fn(); } catch (e) { return 'Error: ' + e.message; }
+  }
+
+  function handleResult(result) {
+    if (result && typeof result.then === 'function') {
+      result.then(function(r) { if (r !== null && r !== undefined) addLine(r); });
+    } else if (result !== null && result !== undefined) {
+      addLine(result);
+    }
+  }
+
+  function addLine(text) {
+    if (!text) return;
+    var div = document.createElement('div');
+    div.textContent = text;
+    div.style.color = 'var(--color-text-secondary)';
+    div.style.fontSize = '0.875rem';
+    div.style.lineHeight = '1.5';
+    div.style.whiteSpace = 'pre-wrap';
+    output.appendChild(div);
+    var body = document.getElementById('terminal-body');
+    if (body) body.scrollTop = body.scrollHeight;
+  }
+
+  if (input) input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      var val = input.value;
+      addLine('$ ' + val);
+      handleResult(executeCommand(val));
+      input.value = '';
+    }
+  });
+})();
+
+// ===== GitHub Contribution Graph =====
+(function() {
+  var gridEl = document.getElementById('contribution-grid');
+  if (!gridEl) return;
+  var contribEl = document.getElementById('gh-total-contributions');
+  var reposEl = document.getElementById('gh-total-repos');
+  var starsEl = document.getElementById('gh-total-stars');
+  var streakEl = document.getElementById('gh-streak');
+  var longestEl = document.getElementById('gh-longest-streak');
+
+  // Show loading
+  gridEl.innerHTML = '<div class="flex items-center justify-center w-full py-8"><div class="w-8 h-8 rounded-full border-2 border-border-light" style="border-top-color: var(--color-primary); animation: rotate 1s linear infinite;"></div></div>';
+
+  fetch('/api/github')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) {
+        gridEl.innerHTML = '<span class="text-text-muted text-sm">Failed to load contribution data.</span>';
+        return;
+      }
+      if (contribEl) contribEl.textContent = data.totalContributions || 0;
+      if (reposEl) reposEl.textContent = data.totalRepos || 0;
+      if (starsEl) starsEl.textContent = data.totalStars || 0;
+      if (streakEl) streakEl.textContent = data.streak || 0;
+      if (longestEl) longestEl.textContent = data.longestStreak || 0;
+
+      if (data.grid && gridEl) {
+        gridEl.innerHTML = '';
+        var dayLabels = ['', 'Mon', '', 'Wed', '', 'Fri', ''];
+        var monthLabels = [];
+        var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+        // Compute month labels from the first week's dates
+        if (data.grid[0] && data.grid[0][0] && data.grid[0][0].date) {
+          var startDate = new Date(data.grid[0][0].date);
+          for (var wi = 0; wi < data.grid.length; wi++) {
+            if (data.grid[wi] && data.grid[wi][0] && data.grid[wi][0].date) {
+              var d = new Date(data.grid[wi][0].date);
+              if (d.getDate() <= 7) {
+                monthLabels.push({ index: wi, label: monthNames[d.getMonth()] });
+              }
+            }
+          }
+        }
+
+        // Day labels column
+        var labelCol = document.createElement('div');
+        labelCol.className = 'flex flex-col gap-[3px] mr-1 pt-5';
+        for (var ld = 0; ld < 7; ld++) {
+          var lbl = document.createElement('div');
+          lbl.style.cssText = 'width:24px;height:12px;font-size:9px;color:var(--color-text-muted);display:flex;align-items:center;';
+          if (dayLabels[ld]) lbl.textContent = dayLabels[ld];
+          labelCol.appendChild(lbl);
+        }
+        gridEl.appendChild(labelCol);
+
+        // Month labels row + contribution columns wrapper
+        var colsWrapper = document.createElement('div');
+        colsWrapper.className = 'flex flex-col';
+
+        var monthRow = document.createElement('div');
+        monthRow.className = 'flex gap-[3px]';
+        for (var mi = 0; mi < data.grid.length; mi++) {
+          var monthCell = document.createElement('div');
+          monthCell.style.cssText = 'width:12px;height:12px;font-size:9px;color:var(--color-text-muted);display:flex;align-items:center;';
+          var found = false;
+          for (var mm = 0; mm < monthLabels.length; mm++) {
+            if (monthLabels[mm].index === mi) {
+              monthCell.textContent = monthLabels[mm].label;
+              found = true;
+              break;
+            }
+          }
+          if (found) {
+            monthRow.appendChild(monthCell);
+          } else {
+            monthCell.style.visibility = 'hidden';
+            monthRow.appendChild(monthCell);
+          }
+        }
+        colsWrapper.appendChild(monthRow);
+
+        var colsRow = document.createElement('div');
+        colsRow.className = 'flex gap-[3px]';
+        var colors = ['var(--color-border)', '#0E4429', '#006D32', '#26A641', '#39D353'];
+
+        for (var wi2 = 0; wi2 < data.grid.length; wi2++) {
+          var week = data.grid[wi2];
+          var col = document.createElement('div');
+          col.className = 'flex flex-col gap-[3px]';
+          for (var di2 = 0; di2 < 7; di2++) {
+            var day = week && week[di2] ? week[di2] : null;
+            var cell = document.createElement('div');
+            var level = (day && day.level !== undefined && day.level !== null) ? day.level : 0;
+            cell.style.cssText = 'width:12px;height:12px;border-radius:2px;background:' + (colors[level] || colors[0]) + ';';
+            if (day && day.date) {
+              cell.title = day.date + ': ' + (day.count || 0) + ' contributions';
+            }
+            col.appendChild(cell);
+          }
+          colsRow.appendChild(col);
+        }
+        colsWrapper.appendChild(colsRow);
+        gridEl.appendChild(colsWrapper);
+      }
+    })
+    .catch(function() {
+      gridEl.innerHTML = '<span class="text-text-muted text-sm">Failed to load contribution data.</span>';
+    });
+})();
+
+// ===== Skill Bar Widths =====
+(function() {
+  var bars = document.querySelectorAll('.skill-bar-fill[data-w]');
+  for (var i = 0; i < bars.length; i++) {
+    bars[i].style.width = bars[i].getAttribute('data-w') + '%';
+  }
+})();
+
+// ===== Footer Year =====
+(function() {
+  var el = document.getElementById('footer-year');
+  if (el) el.textContent = new Date().getFullYear();
+})();
+</script>
+</body>
+</html>
