@@ -1,4 +1,6 @@
-/* ===== Portfolio Main JS ===== */
+/* ============================================================
+   Portfolio Main JS — Premium Edition
+   ============================================================ */
 
 // ===== Utility Functions =====
 function debounce(fn, delay) {
@@ -35,7 +37,7 @@ function formatDate(dateStr) {
   var startTime = Date.now();
   function hideLoading() {
     var elapsed = Date.now() - startTime;
-    var remaining = Math.max(0, 1500 - elapsed);
+    var remaining = Math.max(0, 1200 - elapsed);
     setTimeout(function () {
       ls.style.opacity = '0';
       ls.style.visibility = 'hidden';
@@ -62,7 +64,6 @@ function formatDate(dateStr) {
   var typeSpeed = 80;
   var deleteSpeed = 40;
   var pauseTime = 2000;
-  var timeoutId = null;
 
   function type() {
     var current = HEADLINES[index];
@@ -72,20 +73,20 @@ function formatDate(dateStr) {
       charIndex++;
       if (charIndex === current.length) {
         isDeleting = true;
-        timeoutId = setTimeout(type, pauseTime);
+        setTimeout(type, pauseTime);
         return;
       }
-      timeoutId = setTimeout(type, typeSpeed + Math.random() * 40);
+      setTimeout(type, typeSpeed + Math.random() * 40);
     } else {
       el.textContent = current.substring(0, charIndex);
       charIndex--;
       if (charIndex < 0) {
         isDeleting = false;
         index = (index + 1) % HEADLINES.length;
-        timeoutId = setTimeout(type, 500);
+        setTimeout(type, 500);
         return;
       }
-      timeoutId = setTimeout(type, deleteSpeed + Math.random() * 20);
+      setTimeout(type, deleteSpeed + Math.random() * 20);
     }
   }
   type();
@@ -121,7 +122,7 @@ function formatDate(dateStr) {
     }
   }
   if (sections.length) {
-    var observerOptions = { rootMargin: '-50% 0px -50% 0px', threshold: 0 };
+    var observerOptions = { rootMargin: '-40% 0px -40% 0px', threshold: 0 };
     var sectionObserver = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
         if (entry.isIntersecting) {
@@ -171,13 +172,14 @@ function formatDate(dateStr) {
   }
 })();
 
-// ===== 4. Particle Canvas Animation =====
+// ===== 4. Particle Canvas Animation (with mouse interaction) =====
 (function () {
   var canvas = document.getElementById('particle-canvas');
   if (!canvas) return;
   var ctx = canvas.getContext('2d');
   var particles = [];
   var time = 0;
+  var mouse = { x: null, y: null, radius: 150 };
 
   var config = typeof PARTICLE_CONFIG !== 'undefined' ? PARTICLE_CONFIG : { count: 50, size: { min: 1, max: 3 }, speed: { min: 0.1, max: 0.5 }, color: '#3B82F6', opacity: { min: 0.1, max: 0.5 } };
   var gridCfg = typeof GRID_CONFIG !== 'undefined' ? GRID_CONFIG : { size: 60, color: '#3B82F6', opacity: 0.03, animationSpeed: 0.5 };
@@ -189,11 +191,24 @@ function formatDate(dateStr) {
   resize();
   window.addEventListener('resize', debounce(resize, 100));
 
+  // Mouse tracking
+  window.addEventListener('mousemove', function (e) {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+  });
+  window.addEventListener('mouseleave', function () {
+    mouse.x = null;
+    mouse.y = null;
+  });
+
   var count = config.count || 50;
   var color = config.color || '#3B82F6';
   var cR = parseInt(color.slice(1, 3), 16);
   var cG = parseInt(color.slice(3, 5), 16);
   var cB = parseInt(color.slice(5, 7), 16);
+
+  // Secondary color for connections (accent purple)
+  var c2R = 139, c2G = 92, c2B = 246;
 
   for (var i = 0; i < count; i++) {
     var sizeMin = (config.size && config.size.min) || 1;
@@ -207,7 +222,6 @@ function formatDate(dateStr) {
     particles.push({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
-      baseX: 0,
       speed: speed,
       size: size,
       opacity: opMin + Math.random() * (opMax - opMin),
@@ -217,7 +231,7 @@ function formatDate(dateStr) {
   }
 
   function animate() {
-    time += 0.01 * (gridCfg.animationSpeed || 0.5);
+    time += 0.008 * (gridCfg.animationSpeed || 0.5);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Grid overlay
@@ -227,7 +241,7 @@ function formatDate(dateStr) {
     ctx.strokeStyle = gridColor;
     ctx.lineWidth = 0.5;
     ctx.globalAlpha = gridAlpha;
-    var offset = (time * 20) % gridSize;
+    var offset = (time * 15) % gridSize;
     for (var gx = -gridSize + offset; gx <= canvas.width + gridSize; gx += gridSize) {
       ctx.beginPath();
       ctx.moveTo(gx, 0);
@@ -242,7 +256,7 @@ function formatDate(dateStr) {
     }
     ctx.globalAlpha = 1;
 
-    // Particles floating upward with sine wave
+    // Particles floating upward with sine wave + mouse interaction
     for (var j = 0; j < particles.length; j++) {
       var p = particles[j];
       p.y -= p.speed;
@@ -254,118 +268,72 @@ function formatDate(dateStr) {
       if (p.x < -10) p.x = canvas.width + 10;
       if (p.x > canvas.width + 10) p.x = -10;
 
-      // Radial gradient for fading edges
-      var gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 2);
-      gradient.addColorStop(0, 'rgba(' + cR + ',' + cG + ',' + cB + ',' + p.opacity + ')');
-      gradient.addColorStop(0.5, 'rgba(' + cR + ',' + cG + ',' + cB + ',' + (p.opacity * 0.4) + ')');
+      // Mouse repulsion
+      var currentOpacity = p.opacity;
+      if (mouse.x !== null) {
+        var dx = p.x - mouse.x;
+        var dy = p.y - mouse.y;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < mouse.radius) {
+          var force = (1 - dist / mouse.radius) * 2;
+          p.x += (dx / dist) * force;
+          p.y += (dy / dist) * force;
+          currentOpacity = p.opacity + (1 - dist / mouse.radius) * 0.3;
+        }
+      }
+
+      // Radial gradient for soft glow
+      var gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 3);
+      gradient.addColorStop(0, 'rgba(' + cR + ',' + cG + ',' + cB + ',' + Math.min(currentOpacity, 0.8) + ')');
+      gradient.addColorStop(0.4, 'rgba(' + cR + ',' + cG + ',' + cB + ',' + (currentOpacity * 0.3) + ')');
       gradient.addColorStop(1, 'rgba(' + cR + ',' + cG + ',' + cB + ',0)');
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size * 2, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2);
       ctx.fillStyle = gradient;
       ctx.fill();
+
+      // Connect nearby particles
+      for (var k = j + 1; k < particles.length; k++) {
+        var p2 = particles[k];
+        var ddx = p.x - p2.x;
+        var ddy = p.y - p2.y;
+        var d = Math.sqrt(ddx * ddx + ddy * ddy);
+        if (d < 120) {
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.strokeStyle = 'rgba(' + c2R + ',' + c2G + ',' + c2B + ',' + ((1 - d / 120) * 0.12) + ')';
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        }
+      }
+
+      // Mouse connection lines
+      if (mouse.x !== null) {
+        var mdx = p.x - mouse.x;
+        var mdy = p.y - mouse.y;
+        var mdist = Math.sqrt(mdx * mdx + mdy * mdy);
+        if (mdist < mouse.radius) {
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(mouse.x, mouse.y);
+          ctx.strokeStyle = 'rgba(' + cR + ',' + cG + ',' + cB + ',' + ((1 - mdist / mouse.radius) * 0.2) + ')';
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        }
+      }
     }
     requestAnimationFrame(animate);
   }
   animate();
 })();
 
-// ===== 5. Three.js 3D Scene =====
+// ===== 5. Scroll Reveal Animations =====
 (function () {
-  if (typeof THREE === 'undefined') return;
-  var container = document.getElementById('three-canvas');
-  if (!container) return;
-
-  var scene = new THREE.Scene();
-  var camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
-  camera.position.z = 30;
-
-  var renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-  renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  container.appendChild(renderer.domElement);
-
-  var ambientLight = new THREE.AmbientLight(0x404060);
-  scene.add(ambientLight);
-  var pointLight = new THREE.PointLight(0x3B82F6, 1, 50);
-  pointLight.position.set(10, 10, 20);
-  scene.add(pointLight);
-  var pointLight2 = new THREE.PointLight(0x8B5CF6, 0.8, 50);
-  pointLight2.position.set(-10, -10, 20);
-  scene.add(pointLight2);
-
-  // Torus Knot
-  var geometry = new THREE.TorusKnotGeometry(5, 1.5, 100, 16);
-  var material = new THREE.MeshStandardMaterial({
-    color: 0x3B82F6,
-    wireframe: true,
-    transparent: true,
-    opacity: 0.4,
-    emissive: 0x1a3a8a,
-    emissiveIntensity: 0.2,
-  });
-  var torusKnot = new THREE.Mesh(geometry, material);
-  scene.add(torusKnot);
-
-  // Floating particles
-  var particleGeo = new THREE.BufferGeometry();
-  var particleCount = 800;
-  var positions = new Float32Array(particleCount * 3);
-  var particleColors = new Float32Array(particleCount * 3);
-  for (var i = 0; i < particleCount; i++) {
-    var radius = 15 + Math.random() * 15;
-    var theta = Math.random() * Math.PI * 2;
-    var phi = Math.acos(2 * Math.random() - 1);
-    positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
-    positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
-    positions[i * 3 + 2] = radius * Math.cos(phi);
-    var col = new THREE.Color().setHSL(0.6 + Math.random() * 0.2, 0.8, 0.5 + Math.random() * 0.3);
-    particleColors[i * 3] = col.r;
-    particleColors[i * 3 + 1] = col.g;
-    particleColors[i * 3 + 2] = col.b;
-  }
-  particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  particleGeo.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
-  var particleMat = new THREE.PointsMaterial({
-    size: 0.15,
-    vertexColors: true,
-    transparent: true,
-    opacity: 0.8,
-    blending: THREE.AdditiveBlending,
-  });
-  var particleSystem = new THREE.Points(particleGeo, particleMat);
-  scene.add(particleSystem);
-
-  function onResize() {
-    var w = container.clientWidth;
-    var h = container.clientHeight;
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
-    renderer.setSize(w, h);
-  }
-  window.addEventListener('resize', onResize);
-
-  function animateThree() {
-    torusKnot.rotation.x += 0.005;
-    torusKnot.rotation.y += 0.01;
-    particleSystem.rotation.y += 0.0005;
-    renderer.render(scene, camera);
-    requestAnimationFrame(animateThree);
-  }
-  animateThree();
-
-  window.addEventListener('beforeunload', function () {
-    renderer.dispose();
-    geometry.dispose();
-    material.dispose();
-    particleGeo.dispose();
-    particleMat.dispose();
-  });
-})();
-
-// ===== 6. Scroll Reveal Animations =====
-(function () {
-  var revealEls = document.querySelectorAll('.reveal');
+  var selectors = '.reveal, .reveal-left, .reveal-right, .reveal-scale';
+  var revealEls = document.querySelectorAll(selectors);
   if (!revealEls.length) return;
+
   var observer = new IntersectionObserver(function (entries) {
     entries.forEach(function (entry) {
       if (entry.isIntersecting) {
@@ -378,13 +346,81 @@ function formatDate(dateStr) {
         observer.unobserve(entry.target);
       }
     });
-  }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+  }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
   for (var i = 0; i < revealEls.length; i++) {
     observer.observe(revealEls[i]);
   }
 })();
 
-// ===== 7. GitHub Section =====
+// ===== 6. Animated Number Counters =====
+(function () {
+  var counters = document.querySelectorAll('.counter');
+  if (!counters.length) return;
+
+  function animateCounter(el, target, duration) {
+    if (target <= 0) return;
+    var start = 0;
+    var startTime = null;
+
+    function step(timestamp) {
+      if (!startTime) startTime = timestamp;
+      var progress = Math.min((timestamp - startTime) / duration, 1);
+      // Ease out cubic
+      var eased = 1 - Math.pow(1 - progress, 3);
+      var current = Math.floor(eased * target);
+      el.textContent = current;
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      } else {
+        el.textContent = target;
+      }
+    }
+    requestAnimationFrame(step);
+  }
+
+  var observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) {
+        var target = parseInt(entry.target.getAttribute('data-target'), 10);
+        if (target && target > 0) {
+          animateCounter(entry.target, target, 2000);
+        }
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.3 });
+
+  for (var i = 0; i < counters.length; i++) {
+    observer.observe(counters[i]);
+  }
+})();
+
+// ===== 7. Skill Bar Animation =====
+(function () {
+  var bars = document.querySelectorAll('.skill-bar-fill[data-w]');
+  if (!bars.length) return;
+
+  var observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) {
+        var w = entry.target.getAttribute('data-w');
+        if (w) {
+          setTimeout(function () {
+            entry.target.style.width = w + '%';
+          }, 200);
+        }
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  for (var i = 0; i < bars.length; i++) {
+    observer.observe(bars[i]);
+  }
+})();
+
+// ===== 8. GitHub Section =====
 (function () {
   var section = document.getElementById('github');
   if (!section) return;
@@ -398,12 +434,33 @@ function formatDate(dateStr) {
   var loaded = false;
 
   var levelColors = [
-    'rgba(59,130,246,0.1)',
-    '#0e4429',
-    '#006d32',
-    '#26a641',
-    '#39d353',
+    'rgba(59,130,246,0.08)',
+    'rgba(59,130,246,0.25)',
+    'rgba(59,130,246,0.45)',
+    'rgba(59,130,246,0.65)',
+    'rgba(59,130,246,0.9)',
   ];
+
+  function animateGHCounter(el, target) {
+    if (!el || !target || target <= 0) return;
+    el.setAttribute('data-target', target);
+    var start = 0;
+    var startTime = null;
+    var duration = 2000;
+
+    function step(timestamp) {
+      if (!startTime) startTime = timestamp;
+      var progress = Math.min((timestamp - startTime) / duration, 1);
+      var eased = 1 - Math.pow(1 - progress, 3);
+      el.textContent = Math.floor(eased * target);
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      } else {
+        el.textContent = target;
+      }
+    }
+    requestAnimationFrame(step);
+  }
 
   var observer = new IntersectionObserver(function (entries) {
     entries.forEach(function (entry) {
@@ -411,10 +468,7 @@ function formatDate(dateStr) {
         loaded = true;
         observer.unobserve(entry.target);
         gridEl.innerHTML = '<div class="flex items-center justify-center w-full py-8"><div class="w-8 h-8 rounded-full border-2 border-border-light" style="border-top-color: var(--color-primary); animation: rotate 1s linear infinite;"></div></div>';
-        var statsEls = [contribEl, reposEl, starsEl, streakEl, longestEl];
-        for (var s = 0; s < statsEls.length; s++) {
-          if (statsEls[s]) statsEls[s].textContent = '...';
-        }
+
         fetch('/api/github')
           .then(function (r) { return r.json(); })
           .then(function (data) {
@@ -422,11 +476,12 @@ function formatDate(dateStr) {
               gridEl.innerHTML = '<span class="text-text-muted text-sm">Failed to load contribution data.</span>';
               return;
             }
-            if (contribEl) contribEl.textContent = data.totalContributions || 0;
-            if (reposEl) reposEl.textContent = data.totalRepos || 0;
-            if (starsEl) starsEl.textContent = data.totalStars || 0;
-            if (streakEl) streakEl.textContent = data.streak || 0;
-            if (longestEl) longestEl.textContent = data.longestStreak || 0;
+
+            animateGHCounter(contribEl, data.totalContributions || 0);
+            animateGHCounter(reposEl, data.totalRepos || 0);
+            animateGHCounter(starsEl, data.totalStars || 0);
+            animateGHCounter(streakEl, data.streak || 0);
+            animateGHCounter(longestEl, data.longestStreak || 0);
 
             if (data.grid && gridEl) {
               gridEl.innerHTML = '';
@@ -435,12 +490,7 @@ function formatDate(dateStr) {
               labelCol.className = 'flex flex-col gap-[3px] mr-1';
               for (var ld = 0; ld < 7; ld++) {
                 var lbl = document.createElement('div');
-                lbl.style.width = '24px';
-                lbl.style.height = '12px';
-                lbl.style.fontSize = '9px';
-                lbl.style.color = 'var(--color-text-muted)';
-                lbl.style.display = 'flex';
-                lbl.style.alignItems = 'center';
+                lbl.style.cssText = 'width:24px;height:12px;font-size:9px;color:var(--color-text-muted);display:flex;align-items:center;';
                 if (dayLabels[ld]) lbl.textContent = dayLabels[ld];
                 labelCol.appendChild(lbl);
               }
@@ -451,11 +501,9 @@ function formatDate(dateStr) {
                 var col = document.createElement('div');
                 col.className = 'flex flex-col gap-[3px]';
                 for (var di = 0; di < 7; di++) {
-                  var day = week[di];
+                  var day = week && week[di] ? week[di] : null;
                   var cell = document.createElement('div');
-                  cell.style.width = '12px';
-                  cell.style.height = '12px';
-                  cell.style.borderRadius = '3px';
+                  cell.className = 'contribution-cell';
                   var level = (day && day.level !== undefined) ? day.level : 0;
                   cell.style.background = levelColors[level] || levelColors[0];
                   if (day && day.date) {
@@ -476,7 +524,7 @@ function formatDate(dateStr) {
   observer.observe(section);
 })();
 
-// ===== 8. AI Chatbot =====
+// ===== 9. AI Chatbot =====
 (function () {
   var toggle = document.getElementById('chatbot-toggle');
   var panel = document.getElementById('chatbot-panel');
@@ -497,7 +545,7 @@ function formatDate(dateStr) {
     if (input) setTimeout(function () { input.focus(); }, 100);
     if (!hasOpened && messagesEl) {
       hasOpened = true;
-      addMessage('Hi! I\'m the AI assistant for Tejas\'s portfolio. Ask me about skills, projects, experience, or anything else!', 'bot');
+      addMessage("Hi! 👋 I'm the AI assistant for Tejas's portfolio. Ask me about skills, projects, experience, or anything else!", 'bot');
     }
   }
 
@@ -520,10 +568,10 @@ function formatDate(dateStr) {
     var avatarBg = isUser ? 'var(--color-primary)' : 'linear-gradient(135deg, var(--color-primary), var(--color-accent))';
     var avatarSvg = isUser
       ? '<svg viewBox="0 0 24 24" fill="white" class="w-4 h-4"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>'
-      : '<svg viewBox="0 0 24 24" fill="white" class="w-4 h-4"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>';
+      : '<svg viewBox="0 0 24 24" fill="white" class="w-4 h-4"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>';
     div.innerHTML = '<div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style="background: ' + avatarBg + ';">' + avatarSvg + '</div>'
       + '<div class="flex-1 p-3 rounded-xl text-sm leading-relaxed whitespace-pre-wrap" style="background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text-secondary);">'
-      + text.replace(/\n/g, '<br>') + '</div>';
+      + text.replace(/\\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--color-text-primary)">$1</strong>') + '</div>';
     messagesEl.appendChild(div);
     messagesEl.scrollTop = messagesEl.scrollHeight;
   }
@@ -533,7 +581,7 @@ function formatDate(dateStr) {
     var div = document.createElement('div');
     div.className = 'flex items-start gap-3 typing-indicator';
     div.innerHTML = '<div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style="background: linear-gradient(135deg, var(--color-primary), var(--color-accent));">'
-      + '<svg viewBox="0 0 24 24" fill="white" class="w-4 h-4"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg></div>'
+      + '<svg viewBox="0 0 24 24" fill="white" class="w-4 h-4"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg></div>'
       + '<div class="flex-1 p-3 rounded-xl text-sm" style="background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text-muted);">'
       + '<span class="typing-dots"><span>.</span><span>.</span><span>.</span></span></div>';
     messagesEl.appendChild(div);
@@ -568,7 +616,7 @@ function formatDate(dateStr) {
   }
 })();
 
-// ===== 9. Terminal Emulator =====
+// ===== 10. Terminal Emulator =====
 (function () {
   var toggle = document.getElementById('terminal-toggle');
   var panel = document.getElementById('terminal-panel');
@@ -597,8 +645,6 @@ function formatDate(dateStr) {
   }
 
   toggle.addEventListener('click', toggleTerminal);
-  var closeTerminal = document.getElementById('terminal-close');
-  if (closeTerminal) closeTerminal.addEventListener('click', function () { panel.classList.add('hidden'); if (openIcon) openIcon.classList.remove('hidden'); if (closeIcon) closeIcon.classList.add('hidden'); });
 
   function addLine(text) {
     if (!text || !output) return;
@@ -606,7 +652,7 @@ function formatDate(dateStr) {
     div.textContent = text;
     div.style.color = 'var(--color-text-secondary)';
     div.style.fontSize = '0.875rem';
-    div.style.lineHeight = '1.5';
+    div.style.lineHeight = '1.6';
     div.style.whiteSpace = 'pre-wrap';
     output.appendChild(div);
     if (body) body.scrollTop = body.scrollHeight;
@@ -630,13 +676,13 @@ function formatDate(dateStr) {
       return fetchAbout().then(function (r) { return r; });
     },
     whoami: function () {
-      return 'Tejas N B';
+      return 'Tejas N B — Full Stack Developer\nMangaluru, India';
     },
     skills: function () {
       var cats = {
-        'Backend': ['Python (95%)', 'FastAPI (90%)', 'Node.js (70%)'],
+        'Backend': ['Python (100%)', 'FastAPI (95%)', 'Node.js (70%)'],
         'Frontend': ['JavaScript (85%)', 'TypeScript (80%)', 'React (80%)', 'HTML/CSS (85%)'],
-        'DevOps': ['Docker (80%)', 'Git (90%)', 'Linux (65%)'],
+        'DevOps': ['Docker (80%)', 'Git & GitHub (90%)', 'Linux (65%)'],
         'Cloud': ['AWS (75%)'],
         'Database': ['MongoDB (85%)', 'PostgreSQL (75%)'],
       };
@@ -666,15 +712,15 @@ function formatDate(dateStr) {
         + '  Learned cloud fundamentals with AWS and Docker';
     },
     education: function () {
-      return 'Self-Taught / Online Certifications\n'
-        + '  Full Stack Development — Computer Science (2023–2024)\n'
-        + '  Focus on Python backend development with FastAPI\n'
-        + '  Frontend development with React, Next.js, and TypeScript';
+      return '🎓 Sahyadri College of Engineering and Management, Adyar, Mangalore\n'
+        + '   Degree: Bachelor of Engineering (B.E.) in Computer Science & Engineering\n'
+        + '   Status: Currently Studying (Present)\n'
+        + '   Focus: Software Engineering, Full Stack Development, and Modern Cloud Systems';
     },
     contact: function () {
       return 'Email: tejasnb03@gmail.com\n'
         + 'GitHub: https://github.com/dev-tejasnb\n'
-        + 'LinkedIn: https://linkedin.com/in/tejas-n-b\n'
+        + 'LinkedIn: https://linkedin.com/in/tejasnb\n'
         + 'Twitter: https://twitter.com/dev_tejasnb';
     },
     clear: function () {
@@ -685,13 +731,13 @@ function formatDate(dateStr) {
       return new Date().toString();
     },
     banner: function () {
-      return '  ____  _                      _   _  __\n'
-        + ' |  _ \\| |                    | \\ | |/ _|\n'
-        + ' | |_) | |_   _  ___ ___ ___  |  \\| | |_\n'
-        + ' |  _ <| | | | |/ __/ __/ __| | . ` |  _|\n'
-        + ' | |_) | | |_| | (_| (__\\__ \\_| |\\  | |\n'
-        + ' |____/|_|\\__,_|\\___\\___|___(_)_| \\_|_|\n'
-        + '\nWelcome to Tejas\'s Portfolio Terminal v1.0.0\nType \'help\' for available commands.';
+      return '  _____     _             _   _ ____\n'
+        + ' |_   _|__ (_) __ _ ___  | \\ | | __ )\n'
+        + '   | |/ _ \\| |/ _` / __| |  \\| |  _ \\\n'
+        + '   | |  __/| | (_| \\__ \\_| |\\  | |_) |\n'
+        + '   |_|\\___// |\\__,_|___(_)_| \\_|____/\n'
+        + '         |__/\n'
+        + '\nWelcome to Tejas\'s Portfolio Terminal v2.0\nType \'help\' for available commands.';
     },
   };
 
@@ -756,9 +802,9 @@ function formatDate(dateStr) {
   }
 })();
 
-// ===== 10. Floating UI Management =====
+// ===== 11. Parallax & Smooth Scroll =====
 (function () {
-  // Parallax effect on hero section
+  // Parallax on hero orbital ring
   var hero = document.getElementById('hero');
   if (hero) {
     document.addEventListener('mousemove', function (e) {
@@ -786,7 +832,7 @@ function formatDate(dateStr) {
     }
   });
 
-  // Handle viewport height for mobile (CSS custom property --vh)
+  // Mobile viewport height fix
   function setVH() {
     var vh = window.innerHeight * 0.01;
     document.documentElement.style.setProperty('--vh', vh + 'px');
@@ -795,7 +841,7 @@ function formatDate(dateStr) {
   window.addEventListener('resize', setVH);
 })();
 
-// ===== Footer Year =====
+// ===== 12. Footer Year =====
 (function () {
   var el = document.getElementById('footer-year');
   if (el) el.textContent = new Date().getFullYear();

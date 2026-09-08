@@ -150,17 +150,17 @@ EXPERIENCE = [
 EDUCATION = [
     {
         "id": "1",
-        "institution": "Self-Taught / Online Certifications",
-        "degree": "Full Stack Development",
-        "field": "Computer Science",
-        "location": "Online",
-        "startDate": "2023",
-        "endDate": "2024",
+        "institution": "Sahyadri College of Engineering and Management",
+        "degree": "Bachelor of Computer Science (BCA)",
+        "field": "Computer Science & Engineering",
+        "location": "Adyar, Mangalore",
+        "startDate": "Currently Studying",
+        "endDate": "Present",
+        "current": True,
         "description": [
-            "Completed comprehensive full stack development curriculum",
-            "Focus on Python backend development with FastAPI/Django",
-            "Frontend development with React, Next.js, and TypeScript",
-            "Cloud and DevOps with AWS, Docker, and CI/CD pipelines",
+            "Currently studying at Sahyadri College of Engineering and Management, Adyar, Mangalore",
+            "Focusing on computer science fundamentals, data structures, algorithms, and system design",
+            "Actively developing full-stack web applications, microservices, and participating in tech initiatives",
         ],
     },
 ]
@@ -216,8 +216,11 @@ NAV_ITEMS = [
     {"label": "About", "href": "#about"},
     {"label": "Skills", "href": "#skills"},
     {"label": "Projects", "href": "#projects"},
+    {"label": "Experience", "href": "#experience"},
+    {"label": "Education", "href": "#education"},
     {"label": "Timeline", "href": "#timeline"},
     {"label": "GitHub", "href": "#github"},
+    {"label": "Contact", "href": "#contact"},
 ]
 
 HEADLINES = [
