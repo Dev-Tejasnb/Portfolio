@@ -175,8 +175,8 @@ async def chat(message: str = ""):
                 lines.append(f"  - {d}")
         return {"response": "Tejas's experience:\n" + "\n".join(lines)}
 
-    if re.search(r"(education|study|learn|academic|degree)", msg):
-        lines = [f"**{e['degree']}** in {e['field']} at *{e['institution']}* ({e['startDate']}–{e['endDate']})" for e in EDUCATION]
+    if re.search(r"(education|study|studying|learn|academic|degree|college|sahyadri)", msg):
+        lines = [f"🎓 **{e['degree']}** in {e['field']} at *{e['institution']}*, {e.get('location', '')} ({e['startDate']})" for e in EDUCATION]
         return {"response": "Tejas's education:\n" + "\n".join(lines)}
 
     if re.search(r"(certif|cert|credential)", msg):
